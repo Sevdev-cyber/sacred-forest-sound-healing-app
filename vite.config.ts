@@ -23,6 +23,8 @@ export default defineConfig(({ mode }) => {
             name: 'Sacred Forest Sound Healing App',
             short_name: 'Sacred Forest',
             description: 'A looping soundboard for sound healers featuring gapless looping, smooth crossfading, and multi-track synthesis.',
+            start_url: '.',
+            scope: '.',
             theme_color: '#1d5231',
             background_color: '#fafaf9',
             display: 'standalone',
