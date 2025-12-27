@@ -4,6 +4,8 @@
 
 # Run and deploy your AI Studio app
 
+[![Deploy to GitHub Pages](https://github.com/Sevdev-cyber/sacred-forest-sound-healing-app/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/Sevdev-cyber/sacred-forest-sound-healing-app/actions/workflows/deploy-pages.yml)
+
 This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1JV-m2LK7qw9Io45cXAx2-FLeawfdrD2w
