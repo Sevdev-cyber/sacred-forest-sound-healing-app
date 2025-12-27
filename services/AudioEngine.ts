@@ -21,6 +21,8 @@ class AudioEngine {
   private masterGain: GainNode | null = null;
   private tonalGain: GainNode | null = null;
   private atmosGain: GainNode | null = null;
+  private bufferCache: Map<string, AudioBuffer> = new Map();
+  private bufferPromises: Map<string, Promise<AudioBuffer>> = new Map();
   
   // New Global Effects
   private reverbNode: ConvolverNode | null = null;
@@ -122,7 +124,7 @@ class AudioEngine {
       // Re-trigger the synthesis setup if it relies on static params, 
       // but ideally we utilize the setIntensity or recreating logic.
       // For now, we recreate the tonal sources to apply new base LFO speeds.
-      if (track.config.category === SoundCategory.TONAL) {
+      if (track.config.category === SoundCategory.TONAL && !track.config.fileUrl) {
          this.refreshTrack(track);
       }
     });
@@ -131,7 +133,7 @@ class AudioEngine {
   public setBrightness(value: number) {
     this.globalBrightness = value;
     this.tracks.forEach((track) => {
-      if (track.config.category === SoundCategory.TONAL) {
+      if (track.config.category === SoundCategory.TONAL && !track.config.fileUrl) {
          this.refreshTrack(track);
       }
     });
@@ -143,7 +145,7 @@ class AudioEngine {
     
     // Refresh all active tonal tracks
     this.tracks.forEach((track) => {
-      if (track.config.category === SoundCategory.TONAL) {
+      if (track.config.category === SoundCategory.TONAL && !track.config.fileUrl) {
         this.refreshTrack(track);
       }
     });
@@ -207,7 +209,7 @@ class AudioEngine {
   
   // --- PLAYBACK CONTROL ---
 
-  public play(sound: SoundConfig, initialIntensity: number = 0.5) {
+  public async play(sound: SoundConfig, initialIntensity: number = 0.5) {
       this.initContext();
       if (!this.context) return;
       
@@ -227,23 +229,39 @@ class AudioEngine {
           trackGain.connect(this.atmosGain!);
       }
 
-      const sourceData = this.createSource(sound, trackGain);
-      if (!sourceData) return;
-
       const track: ActiveTrack = {
           config: sound,
-          source: sourceData.node,
+          source: null,
           gain: trackGain,
-          setIntensity: sourceData.setIntensity,
           currentIntensity: initialIntensity,
-          cleanup: sourceData.cleanup
+          cleanup: undefined
       };
 
       this.tracks.set(sound.id, track);
 
       // Fade In
       trackGain.gain.setTargetAtTime(initialIntensity, this.context.currentTime, FADE_DURATION);
-      
+
+      const sourceData = sound.fileUrl
+        ? await this.createSampleSource(sound, trackGain)
+        : this.createSource(sound, trackGain);
+      if (!sourceData) {
+        this.tracks.delete(sound.id);
+        trackGain.disconnect();
+        return;
+      }
+
+      const currentTrack = this.tracks.get(sound.id);
+      if (!currentTrack || currentTrack.currentIntensity === 0) {
+        sourceData.cleanup?.();
+        sourceData.node.disconnect();
+        return;
+      }
+
+      currentTrack.source = sourceData.node;
+      currentTrack.setIntensity = sourceData.setIntensity;
+      currentTrack.cleanup = sourceData.cleanup;
+
       if (sourceData.setIntensity) {
           sourceData.setIntensity(initialIntensity);
       }
@@ -278,6 +296,32 @@ class AudioEngine {
       this.tracks.forEach(t => this.stop(t.config));
   }
 
+  private async getAudioBuffer(url: string): Promise<AudioBuffer> {
+    const cached = this.bufferCache.get(url);
+    if (cached) return cached;
+
+    const inFlight = this.bufferPromises.get(url);
+    if (inFlight) return inFlight;
+
+    const loadPromise = fetch(url)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to load audio: ${url}`);
+        }
+        return res.arrayBuffer();
+      })
+      .then((data) => this.context!.decodeAudioData(data));
+
+    this.bufferPromises.set(url, loadPromise);
+    try {
+      const buffer = await loadPromise;
+      this.bufferCache.set(url, buffer);
+      return buffer;
+    } finally {
+      this.bufferPromises.delete(url);
+    }
+  }
+
   // --- SOURCE GENERATORS ---
 
   private createSource(sound: SoundConfig, destination: AudioNode): { node: AudioNode, setIntensity?: (val: number) => void, cleanup?: () => void } | null {
@@ -289,6 +333,31 @@ class AudioEngine {
           return this.createAtmosSource(sound, destination);
       }
       return null;
+  }
+
+  private async createSampleSource(
+    sound: SoundConfig,
+    output: AudioNode
+  ): Promise<{ node: AudioNode, setIntensity?: (val: number) => void, cleanup?: () => void } | null> {
+      if (!this.context || !sound.fileUrl) return null;
+
+      const resolvedUrl = new URL(sound.fileUrl, window.location.href).toString();
+      const buffer = await this.getAudioBuffer(resolvedUrl);
+      if (!buffer) return null;
+
+      const src = this.context.createBufferSource();
+      src.buffer = buffer;
+      src.loop = sound.loop !== false;
+      src.connect(output);
+      src.start();
+
+      return {
+        node: src,
+        cleanup: () => {
+          try { src.stop(); } catch(e) {}
+          try { src.disconnect(); } catch(e) {}
+        }
+      };
   }
 
   private createTonalSource(freq: number, output: AudioNode) {

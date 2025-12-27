@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => {
           registerType: 'autoUpdate',
           injectRegister: 'auto',
           includeAssets: ['icon.svg', 'maskable.svg'],
+          workbox: {
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,mp3}']
+          },
           manifest: {
             name: 'Sacred Forest Sound Healing App',
             short_name: 'Sacred Forest',

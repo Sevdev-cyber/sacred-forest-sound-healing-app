@@ -50,10 +50,12 @@ export const SOUND_LIBRARY: SoundConfig[] = [
   // --- Tonal Base (Chromatic Octave) ---
   {
     id: 'drone-c',
-    label: 'Root C',
+    label: 'Sound Heal Me',
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 128.43, 
+    fileUrl: 'Audio/Roots/Sound%20Heal%20Me.mp3',
+    loop: true,
     color: 'shadow-red-600/50 border-red-600 dark:text-red-500 text-red-600',
     iconPath: ICONS.ROOT
   },
@@ -207,6 +209,8 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.ATMOSPHERE,
     type: SoundType.BIRD,
     baseFrequency: 2000,
+    fileUrl: 'Audio/Athmospheres/Birds.mp3',
+    loop: true,
     color: 'shadow-amber-300/50 border-amber-300 dark:text-amber-200 text-amber-600',
     iconPath: ICONS.BIRD
   },

@@ -34,7 +34,7 @@ const InfoModal: React.FC<InfoModalProps> = ({ isOpen, onClose }) => {
           </ul>
 
           <p className="italic text-stone-500 text-xs mt-6">
-            Note: This demo uses real-time web audio synthesis instead of recorded files to ensure it works instantly in your browser without downloads.
+            Note: This demo blends real-time synthesis with recorded ambience for instant play and richer texture.
           </p>
         </div>
 
