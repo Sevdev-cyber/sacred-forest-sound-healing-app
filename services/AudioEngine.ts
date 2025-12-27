@@ -341,12 +341,15 @@ class AudioEngine {
       return null;
   }
 
-  private shouldUseSample(sound: SoundConfig): boolean {
-      if (!sound.fileUrl) return false;
+  private getSampleUrl(sound: SoundConfig): string | undefined {
       if (sound.category === SoundCategory.TONAL) {
-        return this.currentPresetId === 'pure';
+        return sound.sampleFiles?.[this.currentPresetId];
       }
-      return true;
+      return sound.fileUrl;
+  }
+
+  private shouldUseSample(sound: SoundConfig): boolean {
+      return Boolean(this.getSampleUrl(sound));
   }
 
   private async createSourceForSound(
@@ -363,9 +366,11 @@ class AudioEngine {
     sound: SoundConfig,
     output: AudioNode
   ): Promise<{ node: AudioNode, setIntensity?: (val: number) => void, cleanup?: () => void } | null> {
-      if (!this.context || !sound.fileUrl) return null;
+      if (!this.context) return null;
 
-      const resolvedUrl = new URL(sound.fileUrl, window.location.href).toString();
+      const sampleUrl = this.getSampleUrl(sound);
+      if (!sampleUrl) return null;
+      const resolvedUrl = new URL(sampleUrl, window.location.href).toString();
       const buffer = await this.getAudioBuffer(resolvedUrl);
       if (!buffer) return null;
 
