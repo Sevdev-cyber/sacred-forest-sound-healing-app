@@ -44,6 +44,9 @@ const ICONS = {
   CICADA: "M12 2l2 4h-4l2-4zm-4 6l-3 3 3 3v-6zm8 0l3 3-3 3v-6zm-4 0v12h4v-12"
 };
 
+const DRONE_SAMPLE_URL = 'Audio/Roots/Sound%20Heal%20Me.mp3';
+const DRONE_SAMPLE_BASE_FREQUENCY = 128.43;
+
 // 432Hz TUNING SCALE (C3 - C4)
 // Based on A4 = 432Hz
 export const SOUND_LIBRARY: SoundConfig[] = [
@@ -54,7 +57,8 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 128.43, 
-    fileUrl: 'Audio/Roots/Sound%20Heal%20Me.mp3',
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
     loop: true,
     color: 'shadow-red-600/50 border-red-600 dark:text-red-500 text-red-600',
     iconPath: ICONS.ROOT
@@ -65,6 +69,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 136.07,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-red-800/50 border-red-800 dark:text-red-700 text-red-800',
     isHalftone: true
   },
@@ -74,6 +81,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 144.16,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-orange-500/50 border-orange-500 dark:text-orange-500 text-orange-600',
     iconPath: ICONS.SACRAL
   },
@@ -83,6 +93,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 152.74,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-orange-700/50 border-orange-700 dark:text-orange-700 text-orange-800',
     isHalftone: true
   },
@@ -92,6 +105,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 161.82,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-yellow-500/50 border-yellow-500 dark:text-yellow-500 text-yellow-600',
     iconPath: ICONS.SOLAR
   },
@@ -101,6 +117,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 171.44,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-green-500/50 border-green-500 dark:text-green-500 text-green-600',
     iconPath: ICONS.HEART
   },
@@ -110,6 +129,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 181.63,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-green-700/50 border-green-700 dark:text-green-700 text-green-800',
     isHalftone: true
   },
@@ -119,6 +141,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 192.43,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-cyan-500/50 border-cyan-500 dark:text-cyan-500 text-cyan-600',
     iconPath: ICONS.THROAT
   },
@@ -128,6 +153,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 203.88,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-cyan-700/50 border-cyan-700 dark:text-cyan-700 text-cyan-800',
     isHalftone: true
   },
@@ -137,6 +165,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 216.00,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-indigo-500/50 border-indigo-500 dark:text-indigo-500 text-indigo-600',
     iconPath: ICONS.THIRD_EYE
   },
@@ -146,6 +177,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 228.84,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-indigo-800/50 border-indigo-800 dark:text-indigo-800 text-indigo-900',
     isHalftone: true
   },
@@ -155,6 +189,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 242.45,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-violet-500/50 border-violet-500 dark:text-violet-500 text-violet-600',
     iconPath: ICONS.CROWN
   },
@@ -164,6 +201,9 @@ export const SOUND_LIBRARY: SoundConfig[] = [
     category: SoundCategory.TONAL,
     type: SoundType.DRONE,
     baseFrequency: 256.87,
+    fileUrl: DRONE_SAMPLE_URL,
+    sampleBaseFrequency: DRONE_SAMPLE_BASE_FREQUENCY,
+    loop: true,
     color: 'shadow-fuchsia-300/50 border-fuchsia-300 dark:text-fuchsia-300 text-fuchsia-600',
     iconPath: ICONS.OM
   },

@@ -124,8 +124,8 @@ class AudioEngine {
       // Re-trigger the synthesis setup if it relies on static params, 
       // but ideally we utilize the setIntensity or recreating logic.
       // For now, we recreate the tonal sources to apply new base LFO speeds.
-      if (track.config.category === SoundCategory.TONAL && !track.config.fileUrl) {
-         this.refreshTrack(track);
+      if (track.config.category === SoundCategory.TONAL && !this.shouldUseSample(track.config)) {
+         void this.refreshTrack(track);
       }
     });
   }
@@ -133,8 +133,8 @@ class AudioEngine {
   public setBrightness(value: number) {
     this.globalBrightness = value;
     this.tracks.forEach((track) => {
-      if (track.config.category === SoundCategory.TONAL && !track.config.fileUrl) {
-         this.refreshTrack(track);
+      if (track.config.category === SoundCategory.TONAL && !this.shouldUseSample(track.config)) {
+         void this.refreshTrack(track);
       }
     });
   }
@@ -145,16 +145,17 @@ class AudioEngine {
     
     // Refresh all active tonal tracks
     this.tracks.forEach((track) => {
-      if (track.config.category === SoundCategory.TONAL && !track.config.fileUrl) {
-        this.refreshTrack(track);
+      if (track.config.category === SoundCategory.TONAL) {
+        void this.refreshTrack(track);
       }
     });
   }
 
   // Helper to seamlessly recreate a source node with new settings
-  private refreshTrack(track: ActiveTrack) {
+  private async refreshTrack(track: ActiveTrack) {
       const oldSource = track.source;
       const currentIntensity = track.currentIntensity;
+      const trackId = track.config.id;
 
       this.clearStopTimeout(track);
       track.cleanup?.();
@@ -164,14 +165,21 @@ class AudioEngine {
       }
       oldSource?.disconnect();
       
-      const newSourceData = this.createSource(track.config, track.gain);
-      if (newSourceData) {
-        track.source = newSourceData.node;
-        track.setIntensity = newSourceData.setIntensity;
-        track.cleanup = newSourceData.cleanup;
-        if (newSourceData.setIntensity) {
-          newSourceData.setIntensity(currentIntensity);
-        }
+      const newSourceData = await this.createSourceForSound(track.config, track.gain);
+      if (!newSourceData) return;
+
+      const currentTrack = this.tracks.get(trackId);
+      if (!currentTrack || currentTrack.currentIntensity === 0) {
+        newSourceData.cleanup?.();
+        newSourceData.node.disconnect();
+        return;
+      }
+
+      currentTrack.source = newSourceData.node;
+      currentTrack.setIntensity = newSourceData.setIntensity;
+      currentTrack.cleanup = newSourceData.cleanup;
+      if (newSourceData.setIntensity) {
+        newSourceData.setIntensity(currentIntensity);
       }
   }
 
@@ -242,9 +250,7 @@ class AudioEngine {
       // Fade In
       trackGain.gain.setTargetAtTime(initialIntensity, this.context.currentTime, FADE_DURATION);
 
-      const sourceData = sound.fileUrl
-        ? await this.createSampleSource(sound, trackGain)
-        : this.createSource(sound, trackGain);
+      const sourceData = await this.createSourceForSound(sound, trackGain);
       if (!sourceData) {
         this.tracks.delete(sound.id);
         trackGain.disconnect();
@@ -335,6 +341,24 @@ class AudioEngine {
       return null;
   }
 
+  private shouldUseSample(sound: SoundConfig): boolean {
+      if (!sound.fileUrl) return false;
+      if (sound.category === SoundCategory.TONAL) {
+        return this.currentPresetId === 'pure';
+      }
+      return true;
+  }
+
+  private async createSourceForSound(
+    sound: SoundConfig,
+    output: AudioNode
+  ): Promise<{ node: AudioNode, setIntensity?: (val: number) => void, cleanup?: () => void } | null> {
+      if (this.shouldUseSample(sound)) {
+        return this.createSampleSource(sound, output);
+      }
+      return this.createSource(sound, output);
+  }
+
   private async createSampleSource(
     sound: SoundConfig,
     output: AudioNode
@@ -348,6 +372,9 @@ class AudioEngine {
       const src = this.context.createBufferSource();
       src.buffer = buffer;
       src.loop = sound.loop !== false;
+      if (sound.category === SoundCategory.TONAL && sound.baseFrequency && sound.sampleBaseFrequency) {
+        src.playbackRate.value = sound.baseFrequency / sound.sampleBaseFrequency;
+      }
       src.connect(output);
       src.start();
 

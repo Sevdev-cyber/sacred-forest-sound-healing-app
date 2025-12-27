@@ -28,6 +28,7 @@ export interface SoundConfig {
   baseFrequency?: number; // For tonal sounds
   noiseType?: 'pink' | 'white' | 'brown'; // For atmosphere
   fileUrl?: string; // For pre-recorded audio files
+  sampleBaseFrequency?: number; // Original pitch of a sample used for pitch shifting
   loop?: boolean; // Loop audio files
   color: string; // Tailwind color class for glow
   iconPath?: string; // SVG path data
