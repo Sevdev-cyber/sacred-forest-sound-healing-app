@@ -20,7 +20,8 @@ export default defineConfig(({ mode }) => {
           injectRegister: 'auto',
           includeAssets: ['icon.svg', 'maskable.svg'],
           workbox: {
-            globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,mp3}']
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,mp3}'],
+            maximumFileSizeToCacheInBytes: 10 * 1024 * 1024
           },
           manifest: {
             name: 'Sacred Forest Sound Healing App',
