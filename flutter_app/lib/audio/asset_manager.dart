@@ -162,6 +162,20 @@ class AssetManager {
     return Uri.parse(signedUrl);
   }
 
+  Future<Uri?> previewUrl({required SoundConfig sound, required TonePresetId preset}) async {
+    final previewPath = _previewPathFor(sound, preset);
+    if (previewPath == null) return null;
+    final url = _client.storage.from(previewBucket).getPublicUrl(previewPath);
+    return Uri.parse(url);
+  }
+
+  Future<Uri?> vaultUrl({required SoundConfig sound, required TonePresetId preset}) async {
+    final vaultPath = _vaultPathFor(sound, preset);
+    if (vaultPath == null) return null;
+    final signedUrl = await _client.storage.from(vaultBucket).createSignedUrl(vaultPath, 3600);
+    return Uri.parse(signedUrl);
+  }
+
   Future<String> _localPath(AssetBucket bucket, String remotePath) async {
     final root = await getApplicationSupportDirectory();
     final bucketFolder = bucket == AssetBucket.preview ? 'preview_gallery' : 'crystal_vault';
@@ -184,6 +198,12 @@ class AssetManager {
     final base = sound.vaultKeysByPreset?[preset] ?? sound.vaultKey;
     if (base == null) return null;
     final extension = _platformExtension();
+    if (base.endsWith('.ogg')) {
+      return base.replaceFirst(RegExp(r'\\.ogg$'), '.$extension');
+    }
+    if (base.endsWith('.m4a')) {
+      return base.replaceFirst(RegExp(r'\\.m4a$'), '.$extension');
+    }
     if (base.contains('.')) return base;
     return '$base.$extension';
   }

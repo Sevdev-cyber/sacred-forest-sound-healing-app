@@ -8,19 +8,20 @@ This project expects two buckets with strict access boundaries:
    - high quality assets (ogg/m4a) downloaded and cached for offline use
 
 Recommended folder layout (same in both buckets):
-  tones/
-    pure/
-      anchor_c.mp3
-      anchor_c.ogg
-      anchor_c.m4a
-    warm/
-      anchor_warm.mp3
-      anchor_warm.ogg
-      anchor_warm.m4a
-  atmos/
-    birds.mp3
-    birds.ogg
-    birds.m4a
+  preview/
+    harp_ethereal.mp3
+    drum_gaia.mp3
+    koshi_air.mp3
+    rain_soft.mp3
+  vault/
+    harp_master.ogg
+    harp_master.m4a
+    drum_master.ogg
+    drum_master.m4a
+    koshi_master.ogg
+    koshi_master.m4a
+    rain_loop.ogg
+    rain_loop.m4a
 
 Supabase dashboard steps:
 1) Open your project -> Storage -> Create bucket

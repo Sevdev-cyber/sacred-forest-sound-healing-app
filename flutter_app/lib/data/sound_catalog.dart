@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../models/sound_category.dart';
 import '../models/sound_config.dart';
+import '../models/sound_element.dart';
 import '../models/tone_preset.dart';
 
 const tonePresets = <TonePreset>[
   TonePreset(
     id: TonePresetId.pure,
-    name: 'Pure Sine',
+    name: 'Pure',
     description: 'Clean, centered drone for deep clarity.',
   ),
   TonePreset(
     id: TonePresetId.warm,
-    name: 'Warm Pad',
+    name: 'Warm',
     description: 'Golden warmth with soft harmonic bloom.',
   ),
   TonePreset(
@@ -22,178 +23,64 @@ const tonePresets = <TonePreset>[
   ),
   TonePreset(
     id: TonePresetId.organ,
-    name: 'Healing Organ',
+    name: 'Organ',
     description: 'Breathy, grounded and devotional.',
   ),
 ];
 
-const _tonalSampleKeys = <TonePresetId, String>{
-  TonePresetId.pure: 'tones/pure/anchor_c',
-  TonePresetId.warm: 'tones/warm/anchor_warm',
-  TonePresetId.astral: 'tones/pure/anchor_c',
-  TonePresetId.organ: 'tones/pure/anchor_c',
+const Color etherColor = Color(0xFFD6B46A);
+const Color earthColor = Color(0xFFB88F4E);
+const Color airColor = Color(0xFFE3C98D);
+const Color waterColor = Color(0xFFCFB06E);
+
+const Map<SoundElement, Color> elementColors = {
+  SoundElement.ether: etherColor,
+  SoundElement.earth: earthColor,
+  SoundElement.air: airColor,
+  SoundElement.water: waterColor,
 };
 
-const _previewTonalKeys = <TonePresetId, String>{
-  TonePresetId.pure: 'tones/pure/anchor_c.mp3',
-  TonePresetId.warm: 'tones/warm/anchor_warm.mp3',
-  TonePresetId.astral: 'tones/pure/anchor_c.mp3',
-  TonePresetId.organ: 'tones/pure/anchor_c.mp3',
-};
-
-const _vaultTonalKeys = <TonePresetId, String>{
-  TonePresetId.pure: 'tones/pure/anchor_c',
-  TonePresetId.warm: 'tones/warm/anchor_warm',
-  TonePresetId.astral: 'tones/pure/anchor_c',
-  TonePresetId.organ: 'tones/pure/anchor_c',
-};
-
-const tonalSounds = <SoundConfig>[
+const starterSounds = <SoundConfig>[
   SoundConfig(
-    id: 'drone-c',
-    label: 'Root C',
+    id: 'instr_01',
+    label: 'Crystal Harp',
     category: SoundCategory.tonal,
-    baseFrequency: 128.43,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFD6B46A),
+    element: SoundElement.ether,
+    baseFrequency: 432,
+    description: 'The heart of the forest.',
+    previewKey: 'preview/harp_ethereal.mp3',
+    vaultKey: 'vault/harp_master.ogg',
+    color: etherColor,
   ),
   SoundConfig(
-    id: 'drone-c-sharp',
-    label: 'C#',
+    id: 'instr_02',
+    label: 'Shamanic Drum',
     category: SoundCategory.tonal,
-    baseFrequency: 136.07,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFC59C57),
-    isHalftone: true,
+    element: SoundElement.earth,
+    description: 'Deep grounding rhythm.',
+    previewKey: 'preview/drum_gaia.mp3',
+    vaultKey: 'vault/drum_master.ogg',
+    color: earthColor,
   ),
   SoundConfig(
-    id: 'drone-d',
-    label: 'Sacral D',
+    id: 'instr_03',
+    label: 'Koshi Air',
     category: SoundCategory.tonal,
-    baseFrequency: 144.16,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFE0C07E),
+    element: SoundElement.air,
+    baseFrequency: 440,
+    description: 'Whispers of the wind.',
+    previewKey: 'preview/koshi_air.mp3',
+    vaultKey: 'vault/koshi_master.ogg',
+    color: airColor,
   ),
   SoundConfig(
-    id: 'drone-d-sharp',
-    label: 'D#',
-    category: SoundCategory.tonal,
-    baseFrequency: 152.74,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFCBAA63),
-    isHalftone: true,
-  ),
-  SoundConfig(
-    id: 'drone-e',
-    label: 'Solar E',
-    category: SoundCategory.tonal,
-    baseFrequency: 161.82,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFE7D3A1),
-  ),
-  SoundConfig(
-    id: 'drone-f',
-    label: 'Heart F',
-    category: SoundCategory.tonal,
-    baseFrequency: 171.44,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFCFB06E),
-  ),
-  SoundConfig(
-    id: 'drone-f-sharp',
-    label: 'F#',
-    category: SoundCategory.tonal,
-    baseFrequency: 181.63,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFB88F4E),
-    isHalftone: true,
-  ),
-  SoundConfig(
-    id: 'drone-g',
-    label: 'Throat G',
-    category: SoundCategory.tonal,
-    baseFrequency: 192.43,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFD7BC83),
-  ),
-  SoundConfig(
-    id: 'drone-g-sharp',
-    label: 'G#',
-    category: SoundCategory.tonal,
-    baseFrequency: 203.88,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFC19B58),
-    isHalftone: true,
-  ),
-  SoundConfig(
-    id: 'drone-a',
-    label: 'Eye A',
-    category: SoundCategory.tonal,
-    baseFrequency: 216.00,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFE3C98D),
-  ),
-  SoundConfig(
-    id: 'drone-a-sharp',
-    label: 'A#',
-    category: SoundCategory.tonal,
-    baseFrequency: 228.84,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFB68842),
-    isHalftone: true,
-  ),
-  SoundConfig(
-    id: 'drone-b',
-    label: 'Crown B',
-    category: SoundCategory.tonal,
-    baseFrequency: 242.45,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFDBC393),
-  ),
-  SoundConfig(
-    id: 'drone-c-high',
-    label: 'Soul C',
-    category: SoundCategory.tonal,
-    baseFrequency: 256.87,
-    assetKeysByPreset: _tonalSampleKeys,
-    previewKeysByPreset: _previewTonalKeys,
-    vaultKeysByPreset: _vaultTonalKeys,
-    color: Color(0xFFF0D9A9),
-  ),
-];
-
-const atmosphereSounds = <SoundConfig>[
-  SoundConfig(
-    id: 'atmos-birds',
-    label: 'Birds',
+    id: 'instr_04',
+    label: 'Forest Rain',
     category: SoundCategory.atmosphere,
-    assetKey: 'atmos/birds',
-    previewKey: 'atmos/birds.mp3',
-    vaultKey: 'atmos/birds',
-    color: Color(0xFFD5C2A1),
+    element: SoundElement.water,
+    description: 'Cleansing background texture.',
+    previewKey: 'preview/rain_soft.mp3',
+    vaultKey: 'vault/rain_loop.ogg',
+    color: waterColor,
   ),
 ];

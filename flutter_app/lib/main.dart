@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'audio/asset_manager.dart';
 import 'audio/audio_mixer.dart';
+import 'data/sound_library_state.dart';
 import 'theme/app_theme.dart';
 import 'ui/screens/mandala_screen.dart';
 
@@ -35,6 +36,7 @@ class SoundAlchemyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AudioMixer()),
+        ChangeNotifierProvider(create: (_) => SoundLibraryState()..load()),
         Provider(create: (_) => AssetManager()),
       ],
       child: MaterialApp(

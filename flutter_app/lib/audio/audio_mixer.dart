@@ -5,7 +5,6 @@ import 'package:audio_session/audio_session.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 
-import '../data/sound_catalog.dart';
 import '../models/sound_category.dart';
 import '../models/sound_config.dart';
 import '../models/tone_preset.dart';
@@ -34,6 +33,7 @@ class AudioMixer extends ChangeNotifier {
 
   final Map<String, SoundState> _sounds = {};
   final Map<String, String> _cachedFiles = {};
+  final Map<String, String> _remoteUrls = {};
   TonePresetId _preset = TonePresetId.pure;
   double tonalVolume = 0.85;
   double atmosVolume = 0.55;
@@ -61,14 +61,31 @@ class AudioMixer extends ChangeNotifier {
       // AudioSession is not available on all platforms (e.g. web).
     }
 
-    for (final sound in [...tonalSounds, ...atmosphereSounds]) {
+    _ready = true;
+    notifyListeners();
+  }
+
+  Future<void> setSounds(List<SoundConfig> sounds) async {
+    await initialize();
+
+    final nextIds = sounds.map((sound) => sound.id).toSet();
+    final existingIds = _sounds.keys.toSet();
+
+    for (final id in existingIds.difference(nextIds)) {
+      final state = _sounds.remove(id);
+      state?.player.dispose();
+      _cachedFiles.removeWhere((key, _) => key.startsWith('$id|'));
+      _remoteUrls.removeWhere((key, _) => key.startsWith('$id|'));
+    }
+
+    for (final sound in sounds) {
+      if (_sounds.containsKey(sound.id)) continue;
       final state = SoundState(config: sound);
       await state.player.setVolume(0);
       await state.player.setLoopMode(LoopMode.one);
       _sounds[sound.id] = state;
     }
 
-    _ready = true;
     notifyListeners();
   }
 
@@ -115,6 +132,7 @@ class AudioMixer extends ChangeNotifier {
     if (state == null) return;
     final key = _cacheKeyFor(state.config, preset ?? _preset);
     _cachedFiles[key] = path;
+    _remoteUrls.remove(key);
     await _reloadSound(state);
   }
 
@@ -123,6 +141,14 @@ class AudioMixer extends ChangeNotifier {
     if (state == null) return;
     final key = _cacheKeyFor(state.config, preset ?? _preset);
     _cachedFiles.remove(key);
+    await _reloadSound(state);
+  }
+
+  Future<void> setRemoteUrl(String id, String url, {TonePresetId? preset}) async {
+    final state = _sounds[id];
+    if (state == null) return;
+    final key = _cacheKeyFor(state.config, preset ?? _preset);
+    _remoteUrls[key] = url;
     await _reloadSound(state);
   }
 
@@ -175,18 +201,22 @@ class AudioMixer extends ChangeNotifier {
       cachedPath = null;
     }
 
-    final assetPath = cachedPath ?? _resolveAssetPath(state.config);
-    if (assetPath == null) {
+    final remoteUrl = _remoteUrls[cacheKey];
+    final assetPath = _resolveAssetPath(state.config);
+    final sourceKey = cachedPath ?? remoteUrl ?? assetPath;
+    if (sourceKey == null) {
       state.isLoading = false;
       return;
     }
 
-    if (state.loadedAsset != assetPath) {
+    if (state.loadedAsset != sourceKey) {
       final source = cachedPath != null
           ? AudioSource.file(cachedPath)
-          : AudioSource.asset(assetPath);
+          : (remoteUrl != null
+              ? AudioSource.uri(Uri.parse(remoteUrl))
+              : AudioSource.asset(assetPath!));
       await state.player.setAudioSource(source);
-      state.loadedAsset = assetPath;
+      state.loadedAsset = sourceKey;
     }
 
     state.isLoaded = true;
@@ -208,6 +238,12 @@ class AudioMixer extends ChangeNotifier {
   String _cacheKeyFor(SoundConfig sound, TonePresetId preset) {
     if (sound.category == SoundCategory.atmosphere) {
       return '${sound.id}|atmos';
+    }
+    final usesPresetAssets = sound.assetKeysByPreset != null ||
+        sound.previewKeysByPreset != null ||
+        sound.vaultKeysByPreset != null;
+    if (!usesPresetAssets) {
+      return '${sound.id}|base';
     }
     return '${sound.id}|${preset.name}';
   }

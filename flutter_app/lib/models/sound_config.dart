@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'sound_category.dart';
+import 'sound_element.dart';
 import 'tone_preset.dart';
 
 class SoundConfig {
@@ -8,8 +9,10 @@ class SoundConfig {
     required this.id,
     required this.label,
     required this.category,
+    required this.element,
     required this.color,
     this.baseFrequency,
+    this.description,
     this.assetKey,
     this.assetKeysByPreset,
     this.previewKey,
@@ -22,7 +25,9 @@ class SoundConfig {
   final String id;
   final String label;
   final SoundCategory category;
+  final SoundElement element;
   final double? baseFrequency;
+  final String? description;
   final String? assetKey;
   final Map<TonePresetId, String>? assetKeysByPreset;
   // previewKey uses the full filename (e.g. tones/pure/anchor_c.mp3).
