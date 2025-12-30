@@ -33,6 +33,7 @@ class AudioMixer extends ChangeNotifier {
   }
 
   final Map<String, SoundState> _sounds = {};
+  final Map<String, String> _cachedFiles = {};
   TonePresetId _preset = TonePresetId.pure;
   double tonalVolume = 0.85;
   double atmosVolume = 0.55;
@@ -101,6 +102,22 @@ class AudioMixer extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setCachedFile(String id, String path, {TonePresetId? preset}) async {
+    final state = _sounds[id];
+    if (state == null) return;
+    final key = _cacheKeyFor(state.config, preset ?? _preset);
+    _cachedFiles[key] = path;
+    await _reloadSound(state);
+  }
+
+  Future<void> clearCachedFile(String id, {TonePresetId? preset}) async {
+    final state = _sounds[id];
+    if (state == null) return;
+    final key = _cacheKeyFor(state.config, preset ?? _preset);
+    _cachedFiles.remove(key);
+    await _reloadSound(state);
+  }
+
   double intensityFor(String id) => _sounds[id]?.targetIntensity ?? 0;
 
   void _startTicker() {
@@ -143,14 +160,24 @@ class AudioMixer extends ChangeNotifier {
     if (state.isLoaded || state.isLoading) return;
     state.isLoading = true;
 
-    final assetPath = _resolveAssetPath(state.config);
+    final cacheKey = _cacheKeyFor(state.config, _preset);
+    var cachedPath = _cachedFiles[cacheKey];
+    if (cachedPath != null && !File(cachedPath).existsSync()) {
+      _cachedFiles.remove(cacheKey);
+      cachedPath = null;
+    }
+
+    final assetPath = cachedPath ?? _resolveAssetPath(state.config);
     if (assetPath == null) {
       state.isLoading = false;
       return;
     }
 
     if (state.loadedAsset != assetPath) {
-      await state.player.setAudioSource(AudioSource.asset(assetPath));
+      final source = cachedPath != null
+          ? AudioSource.file(cachedPath)
+          : AudioSource.asset(assetPath);
+      await state.player.setAudioSource(source);
       state.loadedAsset = assetPath;
     }
 
@@ -162,6 +189,19 @@ class AudioMixer extends ChangeNotifier {
     state.isLoaded = false;
     state.isLoading = false;
     await _ensureLoaded(state);
+  }
+
+  Future<void> _reloadSound(SoundState state) async {
+    state.isLoaded = false;
+    state.isLoading = false;
+    await _ensureLoaded(state);
+  }
+
+  String _cacheKeyFor(SoundConfig sound, TonePresetId preset) {
+    if (sound.category == SoundCategory.atmosphere) {
+      return '${sound.id}|atmos';
+    }
+    return '${sound.id}|${preset.name}';
   }
 
   String _platformFolder() {

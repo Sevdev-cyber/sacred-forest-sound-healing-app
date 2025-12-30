@@ -37,6 +37,10 @@ dependencies:
   just_audio: ^0.9.42
   audio_session: ^0.1.21
   provider: ^6.1.2
+  supabase_flutter: ^2.5.3
+  path_provider: ^2.1.2
+  dio: ^5.4.3
+  path: ^1.9.0
 
 dev_dependencies:
   flutter_test:
