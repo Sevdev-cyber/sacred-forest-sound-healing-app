@@ -58,6 +58,16 @@ class _MandalaScreenState extends State<MandalaScreen> {
       _status = null;
     });
 
+    if (kIsWeb) {
+      mixer.setIntensity(_sound.id, 1);
+      setState(() {
+        _isActive = true;
+        _sourceLabel = 'Local';
+        _status = 'Playing';
+      });
+      return;
+    }
+
     final assets = context.read<AssetManager>();
     final session = Supabase.instance.client.auth.currentSession;
     final hasSession = session != null;
