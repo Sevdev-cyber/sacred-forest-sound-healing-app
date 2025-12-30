@@ -1,0 +1,1 @@
+enum SoundCategory { tonal, atmosphere }
