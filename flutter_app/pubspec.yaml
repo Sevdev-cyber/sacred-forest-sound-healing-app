@@ -70,7 +70,12 @@ flutter:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
   assets:
-    - assets/audio/
+    - assets/audio/ogg/tones/pure/anchor_c.ogg
+    - assets/audio/ogg/tones/warm/anchor_warm.ogg
+    - assets/audio/ogg/atmos/birds.ogg
+    - assets/audio/aac/tones/pure/anchor_c.m4a
+    - assets/audio/aac/tones/warm/anchor_warm.m4a
+    - assets/audio/aac/atmos/birds.m4a
     - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
