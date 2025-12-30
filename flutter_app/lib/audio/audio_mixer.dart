@@ -219,7 +219,9 @@ class AudioMixer extends ChangeNotifier {
     final folder = _platformFolder();
     final extension = _platformExtension(folder);
     final key = sound.category == SoundCategory.tonal
-        ? sound.assetKeysByPreset?[_preset]
+        ? (sound.assetKeysByPreset == null
+            ? null
+            : sound.assetKeysByPreset![_preset])
         : sound.assetKey;
 
     if (key == null) return null;

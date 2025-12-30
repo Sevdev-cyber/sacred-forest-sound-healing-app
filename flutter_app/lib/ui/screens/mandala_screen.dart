@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -235,8 +236,8 @@ class MandalaOrb extends StatelessWidget {
     return ValueListenableBuilder<double>(
       valueListenable: progress,
       builder: (context, value, _) {
-        final clamped = value.clamp(0.0, 1.0);
-        final ringValue = isDownloading ? clamped : (isActive ? 1 : 0);
+        final clamped = value.clamp(0.0, 1.0) as double;
+        final ringValue = isDownloading ? clamped : (isActive ? 1.0 : 0.0);
 
         return Stack(
           alignment: Alignment.center,
