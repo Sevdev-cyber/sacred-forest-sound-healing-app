@@ -46,7 +46,7 @@ class _MandalaScreenState extends State<MandalaScreen> {
     if (_isDownloading) return;
     final mixer = context.read<AudioMixer>();
     if (_isActive) {
-      mixer.setIntensity(_sound.id, 0);
+      await mixer.setIntensity(_sound.id, 0);
       setState(() {
         _isActive = false;
         _status = 'Silence';
@@ -59,7 +59,7 @@ class _MandalaScreenState extends State<MandalaScreen> {
     });
 
     if (kIsWeb) {
-      mixer.setIntensity(_sound.id, 1);
+      await mixer.setIntensity(_sound.id, 1);
       setState(() {
         _isActive = true;
         _sourceLabel = 'Local';
@@ -78,7 +78,7 @@ class _MandalaScreenState extends State<MandalaScreen> {
 
     if (cachedFile != null) {
       await mixer.setCachedFile(_sound.id, cachedFile.path, preset: _preset);
-      mixer.setIntensity(_sound.id, 1);
+      await mixer.setIntensity(_sound.id, 1);
       if (!mounted) return;
       setState(() {
         _isActive = true;
@@ -110,7 +110,7 @@ class _MandalaScreenState extends State<MandalaScreen> {
 
     if (result != null) {
       await mixer.setCachedFile(_sound.id, result.file.path, preset: _preset);
-      mixer.setIntensity(_sound.id, 1);
+      await mixer.setIntensity(_sound.id, 1);
       if (!mounted) return;
       setState(() {
         _isActive = true;

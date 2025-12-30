@@ -54,8 +54,12 @@ class AudioMixer extends ChangeNotifier {
   Future<void> initialize() async {
     if (_ready) return;
 
-    final session = await AudioSession.instance;
-    await session.configure(const AudioSessionConfiguration.music());
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+    } catch (_) {
+      // AudioSession is not available on all platforms (e.g. web).
+    }
 
     for (final sound in [...tonalSounds, ...atmosphereSounds]) {
       final state = SoundState(config: sound);
@@ -88,7 +92,11 @@ class AudioMixer extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setIntensity(String id, double value) {
+  Future<void> setIntensity(String id, double value) async {
+    if (!_ready) {
+      await initialize();
+    }
+
     final state = _sounds[id];
     if (state == null) return;
 
