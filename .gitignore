@@ -25,3 +25,9 @@ dist-ssr
 
 # Large audio masters (keep out of repo)
 /Audio/
+
+# Local env files
+.env
+.env.*
+!.env.example
+!flutter_app/.env.example
