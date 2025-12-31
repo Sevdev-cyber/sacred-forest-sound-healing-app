@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:audio_session/audio_session.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
 
 import '../models/sound_category.dart';
 import '../models/sound_config.dart';
@@ -14,6 +13,9 @@ class SoundState {
       : player = AudioPlayer(),
         targetIntensity = 0,
         currentVolume = 0,
+        targetPan = 0,
+        currentPan = 0,
+        lastAppliedPan = 0,
         isLoaded = false,
         isLoading = false;
 
@@ -21,6 +23,9 @@ class SoundState {
   final AudioPlayer player;
   double targetIntensity;
   double currentVolume;
+  double targetPan;
+  double currentPan;
+  double lastAppliedPan;
   bool isLoaded;
   bool isLoading;
   String? loadedAsset;
@@ -53,14 +58,6 @@ class AudioMixer extends ChangeNotifier {
 
   Future<void> initialize() async {
     if (_ready) return;
-
-    try {
-      final session = await AudioSession.instance;
-      await session.configure(const AudioSessionConfiguration.music());
-    } catch (_) {
-      // AudioSession is not available on all platforms (e.g. web).
-    }
-
     _ready = true;
     notifyListeners();
   }
@@ -82,7 +79,7 @@ class AudioMixer extends ChangeNotifier {
       if (_sounds.containsKey(sound.id)) continue;
       final state = SoundState(config: sound);
       await state.player.setVolume(0);
-      await state.player.setLoopMode(LoopMode.one);
+      await state.player.setReleaseMode(ReleaseMode.loop);
       _sounds[sound.id] = state;
     }
 
@@ -101,11 +98,13 @@ class AudioMixer extends ChangeNotifier {
 
   void setTonalVolume(double value) {
     tonalVolume = value;
+    _startTicker();
     notifyListeners();
   }
 
   void setAtmosVolume(double value) {
     atmosVolume = value;
+    _startTicker();
     notifyListeners();
   }
 
@@ -120,11 +119,18 @@ class AudioMixer extends ChangeNotifier {
     state.targetIntensity = value.clamp(0, 1);
 
     if (state.targetIntensity > 0) {
-      _ensureLoaded(state);
+      await _ensureLoaded(state);
     }
 
     _startTicker();
     notifyListeners();
+  }
+
+  void setPan(String id, double value) {
+    final state = _sounds[id];
+    if (state == null) return;
+    state.targetPan = value.clamp(-1, 1);
+    _startTicker();
   }
 
   Future<void> setCachedFile(String id, String path, {TonePresetId? preset}) async {
@@ -169,14 +175,25 @@ class AudioMixer extends ChangeNotifier {
 
         if (state.currentVolume > 0.0005) {
           anyActive = true;
-          if (state.isLoaded && !state.player.playing) {
-            state.player.play();
+          if (state.player.state != PlayerState.playing) {
+            unawaited(state.player.resume());
           }
-        } else if (state.player.playing) {
-          state.player.pause();
+        } else if (state.player.state == PlayerState.playing) {
+          unawaited(state.player.pause());
         }
 
-        state.player.setVolume(state.currentVolume);
+        unawaited(state.player.setVolume(state.currentVolume));
+
+        final targetPan = state.targetPan;
+        state.currentPan = _lerp(state.currentPan, targetPan, 0.2);
+        if ((state.currentPan - targetPan).abs() < 0.001) {
+          state.currentPan = targetPan;
+        }
+
+        if ((state.currentPan - state.lastAppliedPan).abs() > 0.02) {
+          state.lastAppliedPan = state.currentPan;
+          unawaited(state.player.setBalance(state.currentPan));
+        }
       }
 
       if (!anyActive) {
@@ -210,12 +227,13 @@ class AudioMixer extends ChangeNotifier {
     }
 
     if (state.loadedAsset != sourceKey) {
-      final source = cachedPath != null
-          ? AudioSource.file(cachedPath)
-          : (remoteUrl != null
-              ? AudioSource.uri(Uri.parse(remoteUrl))
-              : AudioSource.asset(assetPath!));
-      await state.player.setAudioSource(source);
+      if (cachedPath != null) {
+        await state.player.setSourceDeviceFile(cachedPath);
+      } else if (remoteUrl != null) {
+        await state.player.setSourceUrl(remoteUrl);
+      } else if (assetPath != null) {
+        await state.player.setSourceAsset(assetPath);
+      }
       state.loadedAsset = sourceKey;
     }
 
@@ -263,13 +281,11 @@ class AudioMixer extends ChangeNotifier {
     final folder = _platformFolder();
     final extension = _platformExtension(folder);
     final key = sound.category == SoundCategory.tonal
-        ? (sound.assetKeysByPreset == null
-            ? null
-            : sound.assetKeysByPreset![_preset])
+        ? (sound.assetKeysByPreset == null ? null : sound.assetKeysByPreset![_preset])
         : sound.assetKey;
 
     if (key == null) return null;
-    return 'assets/audio/$folder/$key.$extension';
+    return 'audio/$folder/$key.$extension';
   }
 
   @override

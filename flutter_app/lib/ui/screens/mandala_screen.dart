@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -37,10 +38,14 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
   double _tonalVolume = 0.8;
   double _atmosVolume = 0.5;
   double _orbitSpeed = 0.35;
+  double _visualIntensity = 0.45;
 
   late final Ticker _ticker;
   double _orbitPhase = 0;
+  double _visualPhase = 0;
   Duration _lastTick = Duration.zero;
+
+  List<SoundConfig> _tonalSoundsCache = const [];
 
   @override
   void initState() {
@@ -56,25 +61,52 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
 
   void _onTick(Duration elapsed) {
     if (!mounted) return;
-    if (_currentTab != TabView.backing) {
-      _lastTick = elapsed;
-      return;
-    }
     final deltaSeconds = (elapsed - _lastTick).inMilliseconds / 1000.0;
     _lastTick = elapsed;
-    if (deltaSeconds <= 0 || _orbitSpeed <= 0) return;
-    final speed = 12 + (_orbitSpeed * 60);
-    _orbitPhase = (_orbitPhase + (deltaSeconds * speed)) % 360;
-    setState(() {});
+    if (deltaSeconds <= 0) return;
+
+    var needsPaint = false;
+
+    if (_currentTab == TabView.backing) {
+      final speed = 12 + (_orbitSpeed * 60);
+      _orbitPhase = (_orbitPhase + (deltaSeconds * speed)) % 360;
+      _updatePanning();
+      needsPaint = true;
+    }
+
+    if (_currentTab == TabView.visuals) {
+      final visualSpeed = 8 + (_visualIntensity * 24);
+      _visualPhase = (_visualPhase + (deltaSeconds * visualSpeed)) % 360;
+      needsPaint = true;
+    }
+
+    if (needsPaint) {
+      setState(() {});
+    }
   }
 
   void _syncSounds(AudioMixer mixer, List<SoundConfig> sounds) {
     final ids = sounds.map((sound) => sound.id).toSet();
-    if (setEquals(ids, _registeredSoundIds)) return;
-    _registeredSoundIds
-      ..clear()
-      ..addAll(ids);
-    mixer.setSounds(sounds);
+    if (!setEquals(ids, _registeredSoundIds)) {
+      _registeredSoundIds
+        ..clear()
+        ..addAll(ids);
+      unawaited(mixer.setSounds(sounds));
+    }
+    _tonalSoundsCache = sounds.where((s) => s.category == SoundCategory.tonal).toList();
+  }
+
+  void _updatePanning() {
+    if (_tonalSoundsCache.isEmpty) return;
+    final mixer = context.read<AudioMixer>();
+    final count = _tonalSoundsCache.length;
+    for (int i = 0; i < count; i++) {
+      final sound = _tonalSoundsCache[i];
+      final baseAngle = (i / count) * 360 - 90;
+      final angle = (baseAngle + _orbitPhase) * (pi / 180);
+      final pan = cos(angle);
+      mixer.setPan(sound.id, pan);
+    }
   }
 
   double _intensityFor(String id) => _soundIntensities[id] ?? 0;
@@ -145,6 +177,40 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
     });
   }
 
+  Future<void> _downloadOnly(SoundConfig sound) async {
+    if (kIsWeb) {
+      _toast('Downloads are available on mobile.');
+      return;
+    }
+    if (_downloading.contains(sound.id)) return;
+
+    final mixer = context.read<AudioMixer>();
+    final assets = context.read<AssetManager>();
+    final session = Supabase.instance.client.auth.currentSession;
+    final hasSession = session != null;
+
+    setState(() {
+      _downloading.add(sound.id);
+      _downloadProgress[sound.id] = 0;
+    });
+
+    AssetDownloadResult? result;
+    if (hasSession) {
+      result = await _downloadVault(assets, sound);
+    }
+    result ??= await _downloadPreview(assets, sound);
+
+    if (result != null) {
+      await mixer.setCachedFile(sound.id, result.file.path, preset: _preset);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _downloading.remove(sound.id);
+      _downloadProgress[sound.id] = result == null ? 0 : 1;
+    });
+  }
+
   Future<AssetDownloadResult?> _downloadVault(AssetManager assets, SoundConfig sound) async {
     try {
       return await assets.getOrDownloadVault(
@@ -191,6 +257,12 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
     _setSoundIntensity(sound, newValue);
   }
 
+  void _toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
   void _showInfo() {
     showDialog(
       context: context,
@@ -231,7 +303,7 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
 
               return Stack(
                 children: [
-                  _buildTabs(tonalSounds, atmosSounds),
+                  _buildTabs(tonalSounds, atmosSounds, sounds),
                   _buildCorners(),
                   Positioned(
                     top: 12,
@@ -258,7 +330,11 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildTabs(List<SoundConfig> tonalSounds, List<SoundConfig> atmosSounds) {
+  Widget _buildTabs(
+    List<SoundConfig> tonalSounds,
+    List<SoundConfig> atmosSounds,
+    List<SoundConfig> allSounds,
+  ) {
     return Stack(
       children: [
         _tabView(
@@ -271,11 +347,11 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
         ),
         _tabView(
           TabView.harp,
-          _buildPlaceholder('Instrument Gallery'),
+          _buildHarp(allSounds),
         ),
         _tabView(
           TabView.visuals,
-          _buildPlaceholder('Visual Rituals'),
+          _buildVisuals(),
         ),
       ],
     );
@@ -326,7 +402,7 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
                       alignment: Alignment.center,
                       child: Stack(
                         children: [
-                          _OrbitCore(),
+                          const _OrbitCore(),
                           for (int i = 0; i < tonalSounds.length; i++)
                             _buildOrb(
                               sound: tonalSounds[i],
@@ -450,12 +526,75 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildPlaceholder(String label) {
-    return Center(
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodyMedium,
-      ),
+  Widget _buildHarp(List<SoundConfig> sounds) {
+    return Column(
+      children: [
+        const SizedBox(height: 36),
+        Text(
+          'Instrument Gallery',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Preview, download, and awaken each instrument.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            itemBuilder: (context, index) {
+              final sound = sounds[index];
+              return _SoundCard(
+                sound: sound,
+                isActive: _intensityFor(sound.id) > 0.01,
+                isDownloading: _downloading.contains(sound.id),
+                progress: _downloadProgress[sound.id] ?? 0,
+                onPlay: () => _setSoundIntensity(sound, _intensityFor(sound.id) > 0 ? 0 : 0.6),
+                onDownload: () => _downloadOnly(sound),
+              );
+            },
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemCount: sounds.length,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVisuals() {
+    return Column(
+      children: [
+        const SizedBox(height: 36),
+        Text(
+          'Light Ritual',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Breathe with the mandala and tune the pulse.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: CustomPaint(
+              painter: _VisualsPainter(phase: _visualPhase, intensity: _visualIntensity),
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: _SliderCard(
+            label: 'Ritual Pulse',
+            value: _visualIntensity,
+            onChanged: (value) {
+              setState(() => _visualIntensity = value);
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -657,6 +796,8 @@ class _OrbitBackground extends StatelessWidget {
 }
 
 class _OrbitCore extends StatelessWidget {
+  const _OrbitCore();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -897,5 +1038,165 @@ class _SliderCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _SoundCard extends StatelessWidget {
+  const _SoundCard({
+    required this.sound,
+    required this.isActive,
+    required this.isDownloading,
+    required this.progress,
+    required this.onPlay,
+    required this.onDownload,
+  });
+
+  final SoundConfig sound;
+  final bool isActive;
+  final bool isDownloading;
+  final double progress;
+  final VoidCallback onPlay;
+  final VoidCallback onDownload;
+
+  @override
+  Widget build(BuildContext context) {
+    final elementLabel = sound.element.name.toUpperCase();
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: sound.color.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: sound.color.withOpacity(0.12),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: sound.color.withOpacity(0.2),
+            child: Text(
+              elementLabel.substring(0, 1),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppTheme.softInk,
+                  ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(sound.label, style: Theme.of(context).textTheme.headlineSmall),
+                if (sound.description != null) ...[
+                  const SizedBox(height: 4),
+                  Text(sound.description!, style: Theme.of(context).textTheme.bodyMedium),
+                ],
+                const SizedBox(height: 8),
+                Text(
+                  elementLabel,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        letterSpacing: 2,
+                        fontSize: 10,
+                      ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              ElevatedButton(
+                onPressed: isDownloading ? null : onPlay,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isActive ? AppTheme.gold : AppTheme.ivory,
+                  foregroundColor: isActive ? Colors.white : AppTheme.softInk,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+                child: Text(isActive ? 'Stop' : 'Play'),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    if (isDownloading)
+                      CircularProgressIndicator(
+                        value: progress,
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(sound.color),
+                      )
+                    else
+                      IconButton(
+                        icon: Icon(Icons.download, color: AppTheme.softInk),
+                        onPressed: onDownload,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VisualsPainter extends CustomPainter {
+  _VisualsPainter({required this.phase, required this.intensity});
+
+  final double phase;
+  final double intensity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final baseRadius = min(size.width, size.height) * 0.28;
+    final pulse = sin(phase * pi / 180) * (0.08 + intensity * 0.12);
+
+    final glowPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          AppTheme.gold.withOpacity(0.35 + intensity * 0.25),
+          AppTheme.ivory.withOpacity(0.05),
+        ],
+      ).createShader(Rect.fromCircle(center: center, radius: baseRadius * 2.2));
+
+    canvas.drawCircle(center, baseRadius * 2.2, glowPaint);
+
+    final ringPaint = Paint()
+      ..color = AppTheme.gold.withOpacity(0.18 + intensity * 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    canvas.drawCircle(center, baseRadius * (1.1 + pulse), ringPaint);
+    canvas.drawCircle(center, baseRadius * (1.4 - pulse), ringPaint);
+
+    final corePaint = Paint()
+      ..color = AppTheme.ivoryDeep.withOpacity(0.9)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawCircle(center, baseRadius * (0.7 + pulse * 0.5), corePaint);
+
+    final highlightPaint = Paint()
+      ..color = AppTheme.gold.withOpacity(0.3 + intensity * 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    for (int i = 0; i < 6; i++) {
+      final angle = (phase + i * 60) * pi / 180;
+      final offset = Offset(cos(angle), sin(angle)) * baseRadius * 1.6;
+      canvas.drawCircle(center + offset, baseRadius * 0.18, highlightPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _VisualsPainter oldDelegate) {
+    return oldDelegate.phase != phase || oldDelegate.intensity != intensity;
   }
 }
