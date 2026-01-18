@@ -302,8 +302,11 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
               final atmosSounds = sounds.where((s) => s.category == SoundCategory.atmosphere).toList();
 
               return Stack(
+                fit: StackFit.expand,
                 children: [
-                  _buildTabs(tonalSounds, atmosSounds, sounds),
+                  Positioned.fill(
+                    child: _buildTabs(tonalSounds, atmosSounds, sounds),
+                  ),
                   _buildCorners(),
                   Positioned(
                     top: 12,
@@ -336,6 +339,7 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
     List<SoundConfig> allSounds,
   ) {
     return Stack(
+      fit: StackFit.expand,
       children: [
         _tabView(
           TabView.backing,
@@ -543,6 +547,7 @@ class _MandalaScreenState extends State<MandalaScreen> with SingleTickerProvider
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            physics: const AlwaysScrollableScrollPhysics(),
             itemBuilder: (context, index) {
               final sound = sounds[index];
               return _SoundCard(

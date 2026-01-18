@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
@@ -42,6 +43,13 @@ class SoundAlchemyApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
+        scrollBehavior: const MaterialScrollBehavior().copyWith(
+          dragDevices: {
+            PointerDeviceKind.touch,
+            PointerDeviceKind.mouse,
+            PointerDeviceKind.trackpad,
+          },
+        ),
         home: const MandalaScreen(),
       ),
     );
